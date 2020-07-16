@@ -11,3 +11,7 @@ web-build/
 
 # macOS
 .DS_Store
+
+/cocacola-app/components
+/cocacola-app/Details.js
+/cocacola-app/Navigation.js
