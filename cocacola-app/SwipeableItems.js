@@ -1,117 +1,144 @@
 import React, { Component } from 'react';
-import { View, Animated, PanResponder, Dimensions, Image, ImageBackground, Easing, StyleSheet } from 'react-native';
-
-const {width, height} = Dimensions.get('screen');
+import { View, StyleSheet, Dimensions, Animated, PanResponder, Easing, ImageBackground } from 'react-native';
 
 const BackgroundImage = Animated.createAnimatedComponent(ImageBackground);
+
+const { width, height } = Dimensions.get('screen');
 
 class SwipeableItems extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            initialAnimation: new Animated.Value(0),
-            initialAnimationFinished: false,
-            cansAnimation: new Animated.Value(0),
-            isYellowOnFront: true,
+            isYellowCanOnFront: true,
             swipedLeft: false,
-            opacityAnimation: new Animated.Value(1),
-            opacityValue: 1,
-        };
+            backgroundAnimationValue: 1,
+            initialAnimationFinished: false,
+        }
+        this.gestureAnimation = new Animated.Value(0);
+        this.backgroundAnimation = new Animated.Value(1);
+        this.initialAnimation = new Animated.Value(0);
         this.panResponder = PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderMove: (e, gestureState) => {
-                this.state.cansAnimation.setValue(gestureState.dx);
+            onStartShouldSetPanResponder: (evt, gestureState) => true,
+            onMoveShouldSetPanResponder: (evt, gestureState) => true,
+            onPanResponderMove: (evt, gestureState) => {
+                this.gestureAnimation.setValue(gestureState.dx);
             },
-            onPanResponderRelease: (e, gestureState) => {
-                const {vx, moveX} = gestureState;
-                if(vx > 0 && moveX >= width-150) {
-                    const opacityValue = this.state.opacityValue === 1 ? 0 : 1;
+            onPanResponderRelease: (evt, gestureState) => {
+                const { moveX, vx } = gestureState;
+                const { gestureAnimation, backgroundAnimation } = this;
+                const backgroundAnimationValue = this.state.backgroundAnimationValue === 1 ? 0 : 1;
+                if(moveX >= (width - 150) && vx > 0) {
                     Animated.parallel([
-                        Animated.timing(this.state.cansAnimation, {
+                        Animated.timing(gestureAnimation, {
                             toValue: width,
-                            duration: 100,
-                            easing: Easing.linear,
+                            duration: 350,
                             useNativeDriver: false,
+                            easing: Easing.elastic(1.8),
                         }),
-                        Animated.timing(this.state.opacityAnimation, {
-                            toValue: opacityValue,
-                            duration: 220,
-                            easing: Easing.linear,
+                        Animated.timing(backgroundAnimation, {
+                            toValue: backgroundAnimationValue,
+                            duration: 350,
                             useNativeDriver: true,
+                            easing: Easing.linear,
                         })
                     ]).start(() => {
-                        this.state.cansAnimation.setValue(0);
-                        this.setState({isYellowOnFront: !this.state.isYellowOnFront, opacityValue});
+                        gestureAnimation.setValue(0)
+                        this.setState({
+                            isYellowCanOnFront: !this.state.isYellowCanOnFront,
+                            backgroundAnimationValue
+                        })
                     });
                 }
-                else if(vx < 0 && moveX <= 150) {
-                    const opacityValue = this.state.opacityValue === 1 ? 0 : 1;
+                else if(moveX <= 250 && vx < 0) {
                     this.setState({swipedLeft: true}, () => {
                         Animated.parallel([
-                            Animated.timing(this.state.cansAnimation, {
+                            Animated.timing(gestureAnimation, {
                                 toValue: width,
-                                duration: 1000,
+                                duration: 500,
                                 useNativeDriver: false,
                                 easing: Easing.elastic(1.9),
                             }),
-                            Animated.timing(this.state.opacityAnimation, {
-                                toValue: opacityValue,
-                                duration: 220,
-                                useNativeDriver: true,
-                            }),
+                            Animated.timing(backgroundAnimation, {
+                                toValue: backgroundAnimationValue,
+                                duration: 350,
+                                useNativeDriver:true,
+                                easing: Easing.linear,
+                            })
                         ]).start(() => {
-                            this.state.cansAnimation.setValue(0);
-                            this.setState({isYellowOnFront: !this.state.isYellowOnFront, swipedLeft: false, opacityValue});
+                            gestureAnimation.setValue(0)
+                            this.setState({
+                                isYellowCanOnFront: !this.state.isYellowCanOnFront,
+                                swipedLeft: false,
+                                backgroundAnimationValue
+                            });
                         });
-                    });
-                }
+                    })
+                } 
                 else {
-                    Animated.spring(this.state.cansAnimation, {
+                    Animated.timing(gestureAnimation, {
                         toValue: 0,
-                        friction: 50,
+                        duration: 300,
                         easing: Easing.elastic(1.9),
                         useNativeDriver: false,
-                    }).start(() => {
-                        this.panResponderActive = true;
-                    })
+                    }).start();
                 }
-            }
-        })
-    }
-
-    componentDidMount() {
-        Animated.timing(this.state.initialAnimation, {
-            toValue:1,
-            duration: 750,
-            easing: Easing.elastic(2.1),
-            useNativeDriver: true,
-        }).start(() => {
-            this.setState({initialAnimationFinished: true});
+            },
         })
     }
 
     getFrontStyle = (animation) => {
-        const {swipedLeft} = this.state;
+        const { swipedLeft } = this.state;
         const translateX = animation.interpolate({
             inputRange: [-width, 0, width/2, width],
-            outputRange: [-100, 0, 90, 40],
+            outputRange: [-120, 0, 90, 50],
             extrapolate: 'clamp',
-        });
-        const rotate = animation.interpolate({
-            inputRange: [-width, 0, width],
-            outputRange: ['-14deg', '0deg', '10deg'],
-            extrapolate:'clamp'
         });
         const scale = animation.interpolate({
             inputRange: [0, width],
-            outputRange: [1, 0.85],
-            extrapolate:'clamp'
+            outputRange: [1, 0.8],
+            extrapolate:'clamp',
+        });
+        const rotate = animation.interpolate({
+            inputRange: [-width, 0, width],
+            outputRange: ['-9deg', '0deg', '13deg'],
+            extrapolate:'clamp',
         });
         const zIndex = animation.interpolate({
-            inputRange: [-width, 0, width/3, width],
-            outputRange: !swipedLeft ? [3, 3, 0, 0] : [0, 0, 0, 0],
-            extrapolate:'clamp',
+            inputRange: [-width, 0, width],
+            outputRange: !swipedLeft ? [2, 2, 0] : [0, 0, 0],
+        })
+
+        return {
+            transform: [
+                {translateX},
+                {scale},
+                {rotate}
+            ],
+            zIndex,
+            // elevation: zIndex,
+        }
+    }
+
+    getBackStyle = (animation) => {
+        const { swipedLeft } = this.state;
+        const translateX = animation.interpolate({
+            inputRange: [-width, 0,  width],
+            outputRange: [80, 50, 0],
+            extrapolate: 'clamp',
+        });
+        const scale = animation.interpolate({
+            inputRange: [0, width],
+            outputRange: [0.8, 1],
+            extrapolate: 'clamp',
+        });
+        const rotate = animation.interpolate({
+            inputRange: [0, width],
+            outputRange: ['13deg', '0deg'],
+            extrapolate: 'clamp',
+        });
+        const zIndex = animation.interpolate({
+            inputRange: [-width, 0, width],
+            outputRange: !swipedLeft ? [0, 0, 2] : [2, 2, 2],
         })
 
         return {
@@ -121,104 +148,78 @@ class SwipeableItems extends Component {
                 {scale},
             ],
             zIndex,
-            elevation: zIndex,
-        };
+            // elevation: zIndex,
+        }
     }
 
-    getBackStyle = (animation) => {
-        const {swipedLeft} = this.state;
-        const translateX = animation.interpolate({
-            inputRange: [-width, 0, width/2, width],
-            outputRange: [35, 40, 10, 0],
-            extrapolate: 'clamp',
+    componentDidMount() {
+        Animated.timing(this.initialAnimation, {
+            toValue: 1,
+            duration: 500,
+            easing: Easing.elastic(2.3),
+            useNativeDriver: true,
+        }).start(() => {
+            this.setState({
+                initialAnimationFinished: true,
+            });
         });
-        const rotate = animation.interpolate({
-            inputRange: [-width, 0, width],
-            outputRange: ['9deg', '10deg', '0deg'],
-            extrapolate:'clamp'
-        });
-        const scale = animation.interpolate({
-            inputRange: [-width, 0, width],
-            outputRange: [0.9, 0.85, 1],
-            extrapolate:'clamp'
-        });
-        const zIndex = animation.interpolate({
-            inputRange: [-width, 0, width/3, width],
-            outputRange: !swipedLeft ? [4, 0, 0, 4] : [4, 4, 4, 4],
-            extrapolate:'clamp',
-        })
-
-        return {
-            transform: [
-                {translateX},
-                {rotate},
-                {scale}
-            ],
-            zIndex,
-            elevation: zIndex,
-        };
     }
 
     render() {
-        const {
-            initialAnimation,
-            initialAnimationFinished,
-            cansAnimation,
-            isYellowOnFront,
-        } = this.state;
-        const _translateX = initialAnimation.interpolate({
-            inputRange: [0,1],
-            outputRange: [width, 40],
-            extrapolateLeft:'clamp'
-        });
+        const { gestureAnimation, backgroundAnimation, initialAnimation } = this;
+        const { isYellowCanOnFront, initialAnimationFinished } = this.state;
         const translateX = initialAnimation.interpolate({
-            inputRange: [0,1],
+            inputRange: [0, 1],
             outputRange: [width, 0],
-            extrapolateLeft:'clamp'
         });
+        const _translateX = initialAnimation.interpolate({
+            inputRange: [0, 1],
+            outputRange: [width, 50],
+        });
+        const initialFrontStyling = {
+            transform: [
+                {translateX}
+            ]
+        }
+        const initialBackStyling = {
+            transform: [
+                {translateX: _translateX},
+                {scale: 0.8},
+                {rotate: '13deg'},
+            ]
+        };
 
-        const frontStyle = !initialAnimationFinished ?
-                            { transform: [{translateX}] } :
-                            isYellowOnFront ? this.getFrontStyle(cansAnimation) : this.getBackStyle(cansAnimation);
-        const backStyle = !initialAnimationFinished ?
-                            { transform: [{translateX: _translateX}, {scale: 0.85}, {rotate: '10deg'}] } :
-                            !isYellowOnFront ? this.getFrontStyle(cansAnimation) : this.getBackStyle(cansAnimation);
+
+
+        let frontStyle = isYellowCanOnFront ? this.getFrontStyle(gestureAnimation) : this.getBackStyle(gestureAnimation);
+        frontStyle = initialAnimationFinished ? frontStyle : initialFrontStyling;
+        let backStyle = !isYellowCanOnFront ? this.getFrontStyle(gestureAnimation) : this.getBackStyle(gestureAnimation);
+        backStyle = initialAnimationFinished ? backStyle : initialBackStyling;
         return (
             <View style={styles.container}>
                 <Background
-                    opacityAnimation={this.state.opacityAnimation}
+                    animation={backgroundAnimation}
                 />
-                <View
-                    {...this.panResponder.panHandlers}
-                    style={styles.panContainer}
-                >
-                    <Animated.View
-                        style={[styles.itemContainer,{ position: 'absolute'}, backStyle]}
-                    >
-                        <Image
-                            source={require('./assets/dk_coca-cola-light-taste-lime.png')}
-                            resizeMode={'contain'}
-                            style={styles.item}
-                        />
-                    </Animated.View>
-                    <Animated.View
-                        style={[styles.itemContainer, frontStyle]}
-                    >
-                        <Image
-                            source={require('./assets/dk_coca-cola-light-taste-exotic-mango.png')}
-                            resizeMode={'contain'}
-                            style={styles.item}
-                        />
-                    </Animated.View>
+                <View {...this.panResponder.panHandlers} style={styles.panContainer}>
+                    <Animated.Image
+                        source={require('./assets/dk_coca-cola-light-taste-lime.png')}
+                        style={[styles.image, {position:'absolute', top: 120,}, backStyle]}
+                        resizeMode={'contain'}
+                    />
+                    <Animated.Image
+                        source={require('./assets/dk_coca-cola-light-taste-exotic-mango.png')}
+                        style={[styles.image, frontStyle]}
+                        resizeMode={'contain'}
+                    />
                 </View>
             </View>
         );
     }
-};
+}
 
-const Background = (props) => {
-    const {opacityAnimation} = props;
-    const scale = opacityAnimation.interpolate({
+
+const Background = ({animation}) => {
+    const scale = animation.interpolate({
         inputRange: [0, 1],
         outputRange: [1, 0],
         extrapolate: 'clamp',
@@ -226,26 +227,26 @@ const Background = (props) => {
     return(
         <View style={styles.bgContainer}>
             <BackgroundImage
-                        style={[styles.bg, {zIndex: -1,}]}
-                        resizeMode={'cover'}
-                        source={require('./assets/bg_green.png')}
+                style={[styles.bg]}
+                resizeMode={'cover'}
+                source={require('./assets/bg_green.png')}
             >
                 <View style={styles.logoContainer}>
                     <Animated.Image
-                        style={[styles.logo, {transform: [{scale}]}]}
+                        style={[styles.logo, { transform: [{scale}] }]}
                         resizeMode={'contain'}
                         source={require('./assets/light_tastes_lime_logo.png')}
                     />
                 </View>
             </BackgroundImage>
             <BackgroundImage
-                        style={[styles.bg, {opacity: opacityAnimation}]}
-                        resizeMode={'cover'}
-                        source={require('./assets/bg_orange.png')}
+                style={[styles.bg, {opacity: animation}]}
+                resizeMode={'cover'}
+                source={require('./assets/bg_orange.png')}
             >
                 <View style={styles.logoContainer}>
                     <Animated.Image
-                        style={[styles.logo, {transform: [{scale: opacityAnimation}]}]}
+                        style={[styles.logo, {transform: [ {scale: animation} ]}]}
                         resizeMode={'contain'}
                         source={require('./assets/light_tastes_mango_logo.png')}
                     />
@@ -258,24 +259,19 @@ const Background = (props) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent:'center',
-        alignItems:'center',
+        backgroundColor:'lightgreen',
     },
     panContainer: {
         width,
         height,
-        justifyContent:'center',
-        alignItems: 'center',
+        justifyContent: 'center',
+        alignItems:'center',
         zIndex: 10,
     },
-    itemContainer: {
-        width:'55%',
-        height: '62%',
-        paddingTop: 50,
-    },
-    item: {
-        width:'100%',
-        height: '100%',
+    image: {
+        marginTop: 100,
+        width: '55%',
+        height: '60%',
     },
     bgContainer: {
         position:'absolute',
@@ -296,9 +292,9 @@ const styles = StyleSheet.create({
         alignItems:'center',
     },
     logo: {
-        width:'50%',
+        width:'60%',
         height: 90,
     }
-});
-
+})
+ 
 export default SwipeableItems;

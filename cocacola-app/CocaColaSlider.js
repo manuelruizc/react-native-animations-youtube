@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, StyleSheet, ScrollView, Animated, ImageBackground, Dimensions } from 'react-native';
+import { View, StyleSheet, ScrollView, Animated, ImageBackground, Dimensions, Easing, TouchableWithoutFeedback } from 'react-native';
 
 const { width, height } = Dimensions.get('screen');
 
@@ -31,31 +31,64 @@ const items = [
 class CocaColaSlider extends Component {
     constructor(props) {
         super(props);
-        this.state = {  }
+        this.state = { 
+            initialAnimationFinished: false,
+        }
         this.scrollAnimation = new Animated.Value(0);
+        this.initialAnimation = new Animated.Value(0);
     }
+
+    componentDidMount() {
+        Animated.timing(this.initialAnimation, {
+            toValue: 1,
+            duration: 500,
+            easing: Easing.elastic(2.4),
+            useNativeDriver: true,
+        }).start(() => {
+            this.setState({
+                initialAnimationFinished: true,
+            });
+        })
+    }
+
+    navigateTo = (index) => {
+        const { navigate } = this.props.navigation;
+        if(index === 2) {
+            navigate('Swipeable');
+        }
+        else {
+            navigate('Details', {
+                background: items[index].background,
+                logo: items[index].logo,
+            });
+        }
+    }
+
     render() {
-        const { scrollAnimation } = this;
-        
+        const { scrollAnimation, initialAnimation } = this;
+        const { initialAnimationFinished } = this.state;
         return (
             <View style={styles.container}>
                 <Background
                     scrollAnimation={scrollAnimation}
                     items={items}
+                    initialAnimation={initialAnimation}
+                    initialAnimationFinished={initialAnimationFinished}
                 />
                 <Animated.ScrollView
                     horizontal
                     pagingEnabled
                     showsHorizontalScrollIndicator={false}
                     scrollEventThrottle={16}
+                    style={{zIndex: items.length + 1}}
                     onScroll={Animated.event(
                         [ { nativeEvent: { contentOffset: { x: this.scrollAnimation } } } ],
                         {
-                            useNativeDriver: false,
+                            useNativeDriver: true,
                         }
                     )}
                 >
-                    <Items scrollAnimation={scrollAnimation} items={items} />
+                    <Items navigateTo={this.navigateTo} initialAnimation={initialAnimation} scrollAnimation={scrollAnimation} items={items} />
                 </Animated.ScrollView>
             </View>
         );
@@ -63,8 +96,7 @@ class CocaColaSlider extends Component {
 }
 
 
-const Background = (props) => {
-    const { scrollAnimation, items } = props;
+const Background = ({scrollAnimation, items, initialAnimation, initialAnimationFinished}) => {
     return(
         <View style={styles.bgContainer}>
             {items.map((item, index) => {
@@ -86,13 +118,14 @@ const Background = (props) => {
                 });
                 return(
                     <BackgroundImage
+                        key={`item-${index}`}
                         style={[styles.bg, {zIndex, opacity}]}
                         resizeMode={'cover'}
                         source={item.background}
                     >
                         <View style={styles.logoContainer}>
                             <Animated.Image
-                                style={[styles.logo, { transform: [{ scale }] }]}
+                                style={[styles.logo, { transform: [{ scale: index === 0 && !initialAnimationFinished ? initialAnimation : scale }] }]}
                                 resizeMode={'contain'}
                                 source={item.logo}
                             />
@@ -104,26 +137,31 @@ const Background = (props) => {
     );
 }
 
-const Items = (props) => {
-    const { scrollAnimation, items } = props;
+const Items = ({ scrollAnimation, items, initialAnimation, navigateTo }) => {
+    const translateY =  initialAnimation.interpolate({
+        inputRange: [0, 1],
+        outputRange: [300, 0],
+    });
     return(
         <>
             {items.map((item, index) => {
                 const inputRange = index === 0 ? [0, width] : [width*(index-1), width*index, width*(index+1)];
-                const outputRange = index === 0 ? ['0deg', '20deg'] : ['-20deg', '0deg', '20deg'];
+                const outputRange = index === 0 ? ['0deg', '-20deg'] : ['20deg', '0deg', '-20deg'];
                 const rotate = scrollAnimation.interpolate({
                     inputRange,
                     outputRange,
                     extrapolate: 'clamp',
                 });
                 return(
-                    <View key={index} style={styles.itemContainer}>
-                        <Animated.Image
-                            source={item.item_image}
-                            resizeMode={'contain'}
-                            style={[styles.item, { transform: [{rotate}] }]}
-                        />
-                    </View>
+                    <TouchableWithoutFeedback key={index} onPress={() => navigateTo(index)}>
+                        <Animated.View style={[styles.itemContainer, { transform: [{translateY: index === 0 ? translateY : 0}] }]}>
+                            <Animated.Image
+                                source={item.item_image}
+                                resizeMode={'contain'}
+                                style={[styles.item, { transform: [{rotate}] }]}
+                            />
+                        </Animated.View>
+                    </TouchableWithoutFeedback>
                 );
             })}
         </>
@@ -135,6 +173,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         position:'relative',
+        backgroundColor: 'red'
     },
     itemContainer: {
         width,

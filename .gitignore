@@ -13,5 +13,5 @@ web-build/
 .DS_Store
 
 /cocacola-app/components
-/cocacola-app/Details.js
-/cocacola-app/Navigation.js
+/assets/css.js
+/whatsappvoice
