@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, StyleSheet, Dimensions, Animated, PanResponder, Easing, ImageBackground } from 'react-native';
+import { View, StyleSheet, Text, Dimensions, Animated, PanResponder, TouchableWithoutFeedback, Easing, ImageBackground } from 'react-native';
 
 const BackgroundImage = Animated.createAnimatedComponent(ImageBackground);
 
@@ -212,6 +212,16 @@ class SwipeableItems extends Component {
                         resizeMode={'contain'}
                     />
                 </View>
+                <View style={styles.buttonContainer}>
+                    <TouchableWithoutFeedback
+                        onPress={() => this.props.navigation.goBack()}
+                    >
+                        <View
+                            style={styles.button}>
+                            <Text style={{color:'#F40009'}}>Come Back</Text>
+                        </View>
+                    </TouchableWithoutFeedback>
+                </View>
             </View>
         );
     }
@@ -266,7 +276,7 @@ const styles = StyleSheet.create({
         height,
         justifyContent: 'center',
         alignItems:'center',
-        zIndex: 10,
+        zIndex: 1,
     },
     image: {
         marginTop: 100,
@@ -294,6 +304,24 @@ const styles = StyleSheet.create({
     logo: {
         width:'60%',
         height: 90,
+    },
+    buttonContainer: {
+        position: 'absolute',
+        bottom: 35,
+        left: 0,
+        width: '100%',
+        zIndex: 6,
+    },
+    button: {
+        backgroundColor:'white',
+        borderRadius:100,
+        alignSelf: 'center',
+        paddingLeft:22,
+        paddingRight:22,
+        paddingTop: 12,
+        paddingBottom: 12,
+        justifyContent:'center',
+        alignItems:'center'
     }
 })
  

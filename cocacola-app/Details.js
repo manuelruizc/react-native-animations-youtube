@@ -191,7 +191,18 @@ const styles = StyleSheet.create({
         color:'white',
         width:'45%',
     },
-    button: {backgroundColor:'white', transform: [{translateY: 50}, ], borderRadius:100, alignSelf: 'center', paddingLeft:22, paddingRight:22, paddingTop: 12, paddingBottom: 12, justifyContent:'center', alignItems:'center'}
+    button: {
+        backgroundColor:'white',
+        transform: [{translateY: 50}, ],
+        borderRadius:100,
+        alignSelf: 'center',
+        paddingLeft:22,
+        paddingRight:22,
+        paddingTop: 12,
+        paddingBottom: 12,
+        justifyContent:'center',
+        alignItems:'center'
+    }
 });
  
 export default Details;
